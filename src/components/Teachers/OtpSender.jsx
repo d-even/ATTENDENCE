@@ -1,110 +1,101 @@
-// import React from "react";
-// import { useOtpContext } from "../context/OtpContext";
-
-// const OtpSender = () => {
-//   const { setOtp } = useOtpContext();
-
-//   const generateOtp = () => {
-//     const newOtp = Math.floor(100000 + Math.random() * 900000); // Generate a 6-digit OTP
-//     setOtp(newOtp);
-//     localStorage.setItem("otp", newOtp); // ✅ Save OTP in localStorage
-//     alert(`OTP Generated: ${newOtp}`);
-//   };
-
-//   const invalidateOtp = () => {
-//     setOtp(""); // ✅ Clear OTP from context
-//     localStorage.removeItem("otp"); // ✅ Remove OTP from localStorage
-//     alert("OTP has been invalidated. It will no longer work.");
-//   };
-
-//   return (
-//     // <div className="p-4 bg-white shadow rounded">
-//     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-//       <div className="flex items-center justify-between"></div>
-//       <h2 className="text-lg font-semibold">Generate OTP</h2>
-//       <button
-//         onClick={generateOtp}
-//         className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md"
-//       >
-//         Generate OTP
-//       </button>
-//       <button
-//         onClick={invalidateOtp}
-//         className="mt-2 px-4 py-2 bg-red-500 text-white rounded-md ml-2"
-//       >
-//         Invalidate OTP
-//       </button>
-//     </div>
-
-//   );
-// };
-
-// export default OtpSender;
-import React, { useState } from "react";
-import { useOtpContext } from "../context/OtpContext";
+import React, { useState, useEffect } from "react";
+import { collection, addDoc, getDocs, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
 
 const OtpSender = () => {
-  const { setOtp } = useOtpContext();
-  const [otpDocId, setOtpDocId] = useState(null); // Store Firestore doc ID
+  const [otp, setOtp] = useState("");
+  const [otpId, setOtpId] = useState(""); // 🆕 Track OTP document ID
+  const [timetable, setTimetable] = useState([]);
+  const [lectureId, setLectureId] = useState("");
 
+  // ✅ Fetch timetable for dropdown
+  useEffect(() => {
+    const fetchTimetable = async () => {
+      const querySnapshot = await getDocs(collection(db, "timetable"));
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setTimetable(data);
+    };
+
+    fetchTimetable();
+  }, []);
+
+  // ✅ Generate OTP
   const generateOtp = async () => {
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    try {
-      const docRef = await addDoc(collection(db, "otps"), {
-        otp: newOtp,
-        createdAt: serverTimestamp(),
-      });
-
-      setOtp(newOtp);
-      setOtpDocId(docRef.id); // Store document ID for later deletion
-      alert(`✅ OTP Generated and stored: ${newOtp}`);
-    } catch (error) {
-      console.error("❌ Error storing OTP in Firestore:", error);
-      alert("Failed to store OTP. Try again.");
+    const selectedLecture = timetable.find((lec) => lec.id === lectureId);
+    if (!selectedLecture) {
+      alert("Please select a valid lecture.");
+      return;
     }
+
+    const docRef = await addDoc(collection(db, "otps"), {
+      otp: otpCode,
+      lectureId,
+      subject: selectedLecture.subject,
+      time: selectedLecture.time,
+      day: selectedLecture.day,
+      createdAt: new Date(),
+      viewed: false,
+    });
+
+    setOtp(otpCode);
+    setOtpId(docRef.id); // 🆕 Save the doc ID
   };
 
+  // ❌ Invalidate OTP
   const invalidateOtp = async () => {
-    try {
-      if (otpDocId) {
-        await deleteDoc(doc(db, "otps", otpDocId));
-        alert("❌ OTP has been invalidated");
-      } else {
-        alert("No active OTP found to invalidate.");
-      }
+    if (!otpId) return;
 
-      setOtp("");
-      setOtpDocId(null);
-    } catch (error) {
-      console.error("Error deleting OTP:", error);
-      alert("Failed to delete OTP.");
+    try {
+      const otpRef = doc(db, "otps", otpId);
+      await updateDoc(otpRef, { viewed: true });
+      alert("OTP invalidated.");
+      setOtp(""); // Clear OTP
+      setOtpId(""); // Clear doc ID
+    } catch (err) {
+      console.error("Failed to invalidate OTP:", err);
     }
   };
 
   return (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-      <h2 className="text-lg font-semibold">Generate OTP</h2>
+    <div className="bg-white p-4 rounded shadow-md mt-4">
+      <h3 className="text-xl font-bold mb-2">Generate OTP for Lecture</h3>
+
+      <select
+        value={lectureId}
+        onChange={(e) => setLectureId(e.target.value)}
+        className="border p-2 rounded w-full mb-2"
+      >
+        <option value="">Select Lecture</option>
+        {timetable.map((lec) => (
+          <option key={lec.id} value={lec.id}>
+            {lec.subject} - {lec.time} ({lec.day})
+          </option>
+        ))}
+      </select>
+
       <button
         onClick={generateOtp}
-        className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md"
+        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-2"
       >
         Generate OTP
       </button>
-      <button
-        onClick={invalidateOtp}
-        className="mt-2 px-4 py-2 bg-red-500 text-white rounded-md ml-2"
-      >
-        Invalidate OTP
-      </button>
+
+      {otp && (
+        <div className="mt-4 text-lg font-semibold text-blue-700">
+          OTP: {otp}
+          <button
+            onClick={invalidateOtp}
+            className="ml-4 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+          >
+            Invalidate OTP
+          </button>
+        </div>
+      )}
     </div>
   );
 };

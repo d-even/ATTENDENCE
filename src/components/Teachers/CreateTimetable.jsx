@@ -55,7 +55,7 @@ const CreateTimetable = () => {
             required
           />
           <input
-            type="text"
+            type="time"
             placeholder="Time (e.g., 10:00 AM - 11:00 AM)"
             className="border p-2 rounded w-1/3"
             value={time}

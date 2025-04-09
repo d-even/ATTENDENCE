@@ -1,16 +1,33 @@
 import React, { useState, useEffect } from "react";
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { db, auth } from "../firebase";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import OtpSender from "./OtpSender";
 import CreateTimetable from "./CreateTimetable";
 import Attendence from "./Attendence";
 
 const Teacher = () => {
+  const [teacher, setTeacher] = useState(null);
   const [attendance, setAttendance] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [lectures, setLectures] = useState([]);
   const navigate = useNavigate();
+
+  // ✅ Fetch Teacher Info
+  useEffect(() => {
+    const fetchTeacherData = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const teacherRef = doc(db, "teachers", user.uid);
+        const teacherSnap = await getDoc(teacherRef);
+        if (teacherSnap.exists()) {
+          setTeacher(teacherSnap.data());
+        }
+      }
+    };
+
+    fetchTeacherData();
+  }, []);
 
   // ✅ Fetch Attendance Data
   useEffect(() => {
@@ -56,20 +73,14 @@ const Teacher = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h2 className="text-3xl font-bold text-gray-800 text-center">👨‍🏫 Teacher Dashboard</h2>
+      <h2 className="text-3xl font-bold text-gray-800 text-center">
+        Hello {teacher ? teacher.name : "Teacher"}
+      </h2>
 
       <OtpSender />
       <CreateTimetable />
-
-      {/* ✅ View Class Attendance */}
-     
-
-      {/* ✅ Manage Assignments */}
-     
-
       <Attendence />
 
-      {/* ✅ Logout Button */}
       <button
         onClick={() => navigate("/login")}
         className="mt-6 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
