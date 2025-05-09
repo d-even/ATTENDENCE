@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  collection,
-  query,
-  orderBy,
-  getDocs,
-  deleteDoc,
-  doc,
-  limit,
-} from "firebase/firestore";
+import {collection,query, orderBy,getDocs,deleteDoc,doc,limit,} from "firebase/firestore";
 import { db } from "../firebase";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -34,10 +26,18 @@ const Attendance = () => {
     };
 
     const fetchLatestOtp = async () => {
-      const q = query(collection(db, "otps"), orderBy("createdAt", "desc"), limit(1));
-      const snapshot = await getDocs(q);
-      const latest = snapshot.docs[0]?.data();
-      setLatestOtpLecture(latest || null);
+      try {
+        const q = query(
+          collection(db, "otps"),
+          orderBy("createdAt", "desc"),
+          limit(1)
+        );
+        const snapshot = await getDocs(q);
+        const latest = snapshot.docs[0]?.data();
+        setLatestOtpLecture(latest || null);
+      } catch (error) {
+        console.error("Error fetching OTP:", error);
+      }
     };
 
     fetchAttendance();
@@ -61,7 +61,7 @@ const Attendance = () => {
       startY: 20,
       head: [["Email", "Time"]],
       body: students.map((student) => [
-        student.username,
+        student.username || student.name,
         new Date(student.time?.seconds * 1000).toLocaleString(),
       ]),
     });
@@ -97,7 +97,7 @@ const Attendance = () => {
         <tbody>
           {students.map((student) => (
             <tr key={student.id}>
-              <td>{student.username}</td>
+              <td>{student.username || student.name}</td>
               <td>{new Date(student.time?.seconds * 1000).toLocaleString()}</td>
             </tr>
           ))}
@@ -122,4 +122,3 @@ const Attendance = () => {
 };
 
 export default Attendance;
-

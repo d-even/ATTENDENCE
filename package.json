@@ -15,6 +15,7 @@
     "@tailwindcss/postcss": "^4.0.12",
     "@tailwindcss/vite": "^4.0.12",
     "firebase": "^11.3.1",
+    "firebase-admin": "^13.3.0",
     "jspdf": "^3.0.0",
     "jspdf-autotable": "^5.0.2",
     "my-tailwind-app": "file:",

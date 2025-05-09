@@ -34,7 +34,6 @@ const Dashboard = () => {
     fetchUserRole();
   }, [navigate]);
 
-
   return (
     <div className="min-h-screen bg-gray-100 p-6">
 
@@ -46,7 +45,6 @@ const Dashboard = () => {
       {role === "student" && (
         <Student/>
       )}
-
 
     </div>
   );

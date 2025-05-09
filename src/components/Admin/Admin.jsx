@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -9,7 +10,7 @@ const Admin = () => {
   const handleLogin = (e) => {
     e.preventDefault(); // Prevent page reload
 
-    if (email === "hello@gmail.com" && password === "123456") {
+    if (email === "hello@gmail.com" && password === "Hello123") {
       navigate("/adminDashboard"); // Redirect to /teacher if credentials match
     } else {
       alert("Invalid Email or Password!");
